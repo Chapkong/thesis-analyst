@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<title>논문 분석 결과</title>
+<style>
+  * { box-sizing:border-box; margin:0; padding:0; }
+  body { font-family:'Malgun Gothic','맑은 고딕',sans-serif; background:#f4f6f8; color:#222; }
+  #a4 { width:210mm; height:297mm; margin:20px auto; background:#fff; box-shadow:0 2px 14px rgba(0,0,0,.15);
+        padding:14mm 13mm; overflow:hidden; font-size:11pt; line-height:1.45; }
+  #a4 .doc-header { text-align:center; border-bottom:2.2px solid #1a5276; padding-bottom:.35em; margin-bottom:.7em; }
+  #a4 h2.doc { font-size:1.25em; color:#1a5276; margin:0; }
+  #a4 .doc-meta { font-size:.82em; color:#555; margin-top:.2em; }
+  #a4 h3.sec { font-size:1.02em; color:#1a5276; background:#eef3f7; padding:.18em .5em; margin:.55em 0 .25em; border-left:3.5px solid #1a5276; }
+  #a4 h3.sec:first-of-type { margin-top:0; }
+  #a4 .li { margin:.1em 0; }
+  #a4 .li.o { padding-left:1.1em; text-indent:-1.1em; }
+  #a4 .li.d { padding-left:2.5em; text-indent:-1.05em; color:#333; }
+  @page { size:A4; margin:0; }
+  @media print { body { background:#fff; } #a4 { box-shadow:none; margin:0; } }
+</style>
+</head>
+<body>
+<div id="a4"></div>
+<script>
+// formatter 에이전트가 아래 null을 header+5개 항목 JSON 객체로 치환한다. 다른 부분은 수정 금지.
+const DATA = /*__DATA__*/null;
+
+const SECTIONS = [
+  ["subjects",               "1. 연구대상"],
+  ["questions_hypotheses",   "2. 연구질문과 가설"],
+  ["data",                   "3. 연구 데이터"],
+  ["methodology",            "4. 연구방법론"],
+  ["findings_implications",  "5. 주요결과 및 시사점"]
+];
+
+function esc(s){ const d=document.createElement("div"); d.textContent=s; return d.innerHTML; }
+
+const a4 = document.getElementById("a4");
+const header = (DATA && DATA.header) || {};
+const docTitle = header.title || "논문 분석 결과";
+const metaParts = [header.authors, header.year, header.doc_type].filter(Boolean);
+let h = '<div class="doc-header"><h2 class="doc">' + esc(docTitle) + '</h2>';
+if(metaParts.length) h += '<div class="doc-meta">' + esc(metaParts.join(" · ")) + '</div>';
+h += '</div>';
+for(const [key, title] of SECTIONS){
+  h += '<h3 class="sec">' + title + '</h3>';
+  const items = (DATA && Array.isArray(DATA[key]) && DATA[key].length) ? DATA[key] : ["○ 논문에 명시되지 않음"];
+  for(const raw of items){
+    const t = String(raw).trim();
+    const dash = t.startsWith("-");
+    const cls = dash ? "li d" : "li o";
+    const txt = dash ? "- " + t.replace(/^-\s*/,"") : (t.startsWith("○") ? t : "○ " + t);
+    h += '<div class="'+cls+'">' + esc(txt) + '</div>';
+  }
+}
+a4.innerHTML = h;
+
+// A4 1장 자동 맞춤: 폰트 → 줄간격 순차 축소
+let size = 11;
+a4.style.fontSize = size + "pt";
+while(a4.scrollHeight > a4.clientHeight && size > 6.5){
+  size -= 0.5;
+  a4.style.fontSize = size + "pt";
+}
+let lh = 1.45;
+while(a4.scrollHeight > a4.clientHeight && lh > 1.15){
+  lh -= 0.05;
+  a4.style.lineHeight = lh.toFixed(2);
+}
+</script>
+</body>
+</html>
