@@ -3,3 +3,5 @@ anthropic
 pdfplumber
 python-dotenv
 python-docx
+pystray
+pillow
