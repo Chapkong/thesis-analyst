@@ -1,4 +1,6 @@
 @echo off
+powershell -NoProfile -ExecutionPolicy Bypass -File "%~dp0create_shortcut.ps1"
+
 cd /d "%~dp0webapp"
 
 echo 필요한 패키지를 확인합니다 (최초 실행 시 몇 분 걸릴 수 있습니다)...
