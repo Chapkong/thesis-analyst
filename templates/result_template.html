@@ -6,8 +6,9 @@
 <style>
   * { box-sizing:border-box; margin:0; padding:0; }
   body { font-family:'Malgun Gothic','맑은 고딕',sans-serif; background:#f4f6f8; color:#222; }
-  #a4 { width:210mm; height:297mm; margin:20px auto; background:#fff; box-shadow:0 2px 14px rgba(0,0,0,.15);
+  #a4 { width:210mm; min-height:297mm; height:297mm; margin:20px auto; background:#fff; box-shadow:0 2px 14px rgba(0,0,0,.15);
         padding:14mm 13mm; overflow:hidden; font-size:11pt; line-height:1.45; }
+  #a4.multipage { height:auto; overflow:visible; padding-bottom:16mm; }
   #a4 .doc-header { text-align:center; border-bottom:2.2px solid #1a5276; padding-bottom:.35em; margin-bottom:.7em; }
   #a4 h2.doc { font-size:1.25em; color:#1a5276; margin:0; }
   #a4 .doc-meta { font-size:.82em; color:#555; margin-top:.2em; }
@@ -16,6 +17,9 @@
   #a4 .li { margin:.1em 0; }
   #a4 .li.o { padding-left:1.1em; text-indent:-1.1em; }
   #a4 .li.d { padding-left:2.5em; text-indent:-1.05em; color:#333; }
+  #a4 .figure-wrap { margin-top:.4em; text-align:center; }
+  #a4 .figure-wrap img { max-width:100%; border:1px solid #ddd; border-radius:4px; }
+  #a4 .figure-caption { font-size:.82em; color:#555; margin-top:.4em; }
   @page { size:A4; margin:0; }
   @media print { body { background:#fff; } #a4 { box-shadow:none; margin:0; } }
 </style>
@@ -23,7 +27,7 @@
 <body>
 <div id="a4"></div>
 <script>
-// formatter 에이전트가 아래 null을 header+5개 항목 JSON 객체로 치환한다. 다른 부분은 수정 금지.
+// formatter 에이전트가 아래 null을 header+key_figure+5개 항목 JSON 객체로 치환한다. 다른 부분은 수정 금지.
 const DATA = /*__DATA__*/null;
 
 const SECTIONS = [
@@ -38,6 +42,9 @@ function esc(s){ const d=document.createElement("div"); d.textContent=s; return 
 
 const a4 = document.getElementById("a4");
 const header = (DATA && DATA.header) || {};
+const keyFigure = (DATA && DATA.key_figure) || {};
+const hasFigure = !!(keyFigure.present && keyFigure.image_filename);
+
 const docTitle = header.title || "논문 분석 결과";
 const metaParts = [header.authors, header.year, header.doc_type].filter(Boolean);
 let h = '<div class="doc-header"><h2 class="doc">' + esc(docTitle) + '</h2>';
@@ -54,19 +61,30 @@ for(const [key, title] of SECTIONS){
     h += '<div class="'+cls+'">' + esc(txt) + '</div>';
   }
 }
+if(hasFigure){
+  h += '<h3 class="sec">핵심 그림</h3>';
+  h += '<div class="figure-wrap"><img src="' + esc(keyFigure.image_filename) + '" alt="핵심 그림">';
+  if(keyFigure.caption) h += '<div class="figure-caption">' + esc(keyFigure.caption) + '</div>';
+  h += '</div>';
+}
 a4.innerHTML = h;
 
-// A4 1장 자동 맞춤: 폰트 → 줄간격 순차 축소
-let size = 11;
-a4.style.fontSize = size + "pt";
-while(a4.scrollHeight > a4.clientHeight && size > 6.5){
-  size -= 0.5;
+if(hasFigure){
+  // 그림이 있으면 A4 1장 제한을 풀고 필요한 만큼 자연스럽게 늘어나게 둔다
+  a4.classList.add("multipage");
+} else {
+  // 그림이 없으면 기존과 같이 A4 1장 자동 맞춤: 폰트 → 줄간격 순차 축소
+  let size = 11;
   a4.style.fontSize = size + "pt";
-}
-let lh = 1.45;
-while(a4.scrollHeight > a4.clientHeight && lh > 1.15){
-  lh -= 0.05;
-  a4.style.lineHeight = lh.toFixed(2);
+  while(a4.scrollHeight > a4.clientHeight && size > 6.5){
+    size -= 0.5;
+    a4.style.fontSize = size + "pt";
+  }
+  let lh = 1.45;
+  while(a4.scrollHeight > a4.clientHeight && lh > 1.15){
+    lh -= 0.05;
+    a4.style.lineHeight = lh.toFixed(2);
+  }
 }
 </script>
 </body>

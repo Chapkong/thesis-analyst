@@ -7,7 +7,7 @@ import pdfplumber
 from anthropic import Anthropic
 from docx import Document
 from docx.enum.text import WD_ALIGN_PARAGRAPH
-from docx.shared import Pt, RGBColor
+from docx.shared import Inches, Pt, RGBColor
 from dotenv import load_dotenv
 from flask import Flask, jsonify, request, send_file, send_from_directory
 
@@ -64,6 +64,25 @@ def extract_pdf_text(pdf_path):
     return "\n\n".join(pages)
 
 
+def extract_figure_image(pdf_path, page_num, out_path, resolution=200, pad=15):
+    with pdfplumber.open(pdf_path) as pdf:
+        if page_num < 1 or page_num > len(pdf.pages):
+            raise ValueError(f"페이지 {page_num}은 존재하지 않습니다 (전체 {len(pdf.pages)}페이지)")
+        page = pdf.pages[page_num - 1]
+        area_threshold = 0.05 * page.width * page.height
+        images = [
+            im for im in page.images
+            if (im["x1"] - im["x0"]) * (im["bottom"] - im["top"]) > area_threshold
+        ]
+        if images:
+            top = max(0, min(im["top"] for im in images) - pad)
+            bottom = min(page.height, max(im["bottom"] for im in images) + pad * 2)
+            target = page.crop((0, top, page.width, bottom))
+        else:
+            target = page
+        target.to_image(resolution=resolution).save(out_path, format="PNG")
+
+
 def _create_message(model, system, user, max_tokens, effort):
     return client.messages.create(
         model=model,
@@ -101,6 +120,12 @@ def parse_json_block(text):
         "authors": header.get("authors") or "",
         "year": header.get("year") or "",
         "doc_type": header.get("doc_type") or "",
+    }
+    key_figure = data.get("key_figure") or {}
+    data["key_figure"] = {
+        "present": bool(key_figure.get("present")),
+        "page": key_figure.get("page"),
+        "caption": key_figure.get("caption") or "",
     }
     return data
 
@@ -180,6 +205,25 @@ def render_result_docx(data, out_path):
             item_run = item_p.add_run(f"{marker} {content}")
             item_run.font.size = Pt(10.5)
 
+    key_figure = data.get("key_figure") or {}
+    if key_figure.get("present") and key_figure.get("image_filename"):
+        figure_path = Path(out_path).parent / key_figure["image_filename"]
+        if figure_path.exists():
+            heading_p = doc.add_paragraph()
+            heading_p.paragraph_format.space_before = Pt(10)
+            heading_run = heading_p.add_run("핵심 그림")
+            heading_run.bold = True
+            heading_run.font.size = Pt(12)
+            heading_run.font.color.rgb = RGBColor(0x1A, 0x52, 0x76)
+
+            doc.add_picture(str(figure_path), width=Inches(6))
+            if key_figure.get("caption"):
+                cap_p = doc.add_paragraph(key_figure["caption"])
+                cap_p.alignment = WD_ALIGN_PARAGRAPH.CENTER
+                for run in cap_p.runs:
+                    run.font.size = Pt(9)
+                    run.italic = True
+
     doc.save(out_path)
 
 
@@ -208,6 +252,15 @@ def analyze():
         data = run_pipeline(pdf_path)
     except Exception as exc:
         return jsonify({"error": str(exc)}), 500
+
+    key_figure = data.get("key_figure") or {}
+    if key_figure.get("present") and key_figure.get("page"):
+        figure_name = f"{stem}_figure.png"
+        try:
+            extract_figure_image(pdf_path, key_figure["page"], RESULTS_DIR / figure_name)
+            key_figure["image_filename"] = figure_name
+        except Exception:
+            data["key_figure"] = {"present": False, "page": None, "caption": ""}
 
     out_html = f"{stem}.html"
     (RESULTS_DIR / out_html).write_text(render_result_html(data), encoding="utf-8")

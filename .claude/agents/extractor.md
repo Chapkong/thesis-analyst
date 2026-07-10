@@ -17,6 +17,7 @@ tools: Read
 7. verifier로부터 수정 지시를 받으면 지적된 부분만 원문 기준으로 수정하시오.
 8. header 필드(title, authors, year, doc_type)는 원문 서지정보에 근거해 개조식 기호 없이 간결한 일반 텍스트로 작성하시오. doc_type은 원문에 나타난 근거(저널 게재, 학위논문, 학술대회 발표, 정책보고서 등)로 판별하고, 근거가 불충분하면 "문서유형 미상"으로 기재하시오.
 9. 논문 제목·저자명·발행연도는 header에만 기재하고, 5개 본문 항목에는 반복 기재하지 마시오 (화면 상단에 header가 이미 표시되므로 중복임).
+10. key_figure는 원문의 [핵심그림] 섹션 기록을 그대로 따르시오. pdf-reader가 "없음"이라고 기재했으면 present=false, page=null, caption=""으로 두시오. 그림이 있다고 기재됐으면 present=true, page는 (p.X)의 숫자, caption은 원문 캡션 그대로 기재하시오. 이 필드는 창작하지 말고 원문에 명시된 대로만 기재하시오.
 
 ## 출력 형식 (이 JSON만 출력)
 
@@ -27,12 +28,19 @@ tools: Read
     "year": "...",
     "doc_type": "..."
   },
+  "key_figure": {
+    "present": true,
+    "page": 3,
+    "caption": "..."
+  },
   "subjects": ["○ ...", "- ..."],
   "questions_hypotheses": ["○ ...", "- ..."],
   "data": ["○ ...", "- ..."],
   "methodology": ["○ ...", "- ..."],
   "findings_implications": ["○ ...", "- ..."]
 }
+
+key_figure가 없는 경우: {"present": false, "page": null, "caption": ""}
 
 키 대응: subjects=연구대상,
 questions_hypotheses=연구질문과 가설, data=연구 데이터,

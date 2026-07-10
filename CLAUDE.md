@@ -13,16 +13,18 @@
 
 사용자가 "inbox의 논문 분석해줘"라고 하면 아래 순서로 서브에이전트를 호출한다.
 
-1. **pdf-reader** — inbox/의 PDF를 판독하여 구조화된 원문(서지/초록/방법/결과/결론, 표·수치 포함) 반환
-2. **extractor** — 구조화 원문에서 헤더 정보(제목/저자/연도/문서유형)와 5개 항목(연구대상, 연구질문과 가설,
+1. **pdf-reader** — inbox/의 PDF를 판독하여 구조화된 원문(서지/초록/방법/결과/결론, 표·수치, 핵심그림 위치 포함) 반환
+2. **extractor** — 구조화 원문에서 헤더 정보(제목/저자/연도/문서유형), 핵심그림 정보(key_figure), 5개 항목(연구대상, 연구질문과 가설,
    연구 데이터, 연구방법론, 주요결과 및 시사점)을 개조식 JSON으로 추출. 제목·저자·연도는 헤더에만 기재하고 본문 항목에는 반복하지 않는다.
 3. **verifier** — 원문과 extractor 출력을 대조 검증. FAIL이면 수정 지시와 함께 extractor 재실행 (최대 2회)
-4. **formatter** — 검증 통과한 JSON을 templates/result_template.html에 삽입하여 results/<PDF파일명>.html 생성
+4. **formatter** — key_figure가 있으면 scripts/extract_figure.py로 그림 이미지를 추출하고, 검증 통과한 JSON을 templates/result_template.html에 삽입하여 results/<PDF파일명>.html 생성
 
 각 단계 산출물은 다음 단계에 그대로 전달하며, 중간에 임의로 내용을 축약하지 않는다.
 
 ## 완료 기준
 
 - header(제목/저자/연도/문서유형)와 5개 항목 모두 존재하고 각 항목이 개조식(○/−)일 것
+- 논문에 연구모형·핵심그림이 있으면 결과물에 그림 1개가 포함될 것 (이 경우 A4 1장을 넘어가는 것을 허용한다)
+- 논문에 해당하는 그림이 없으면 기존과 같이 A4 1장, 넘치면 폰트 자동 축소
 - verifier PASS
-- results/에 HTML 저장 완료 (브라우저에서 A4 1장, 넘치면 폰트 자동 축소)
+- results/에 HTML 저장 완료
